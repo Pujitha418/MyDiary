@@ -1,0 +1,22 @@
+
+server:
+  port: 8385
+spring:
+  jpa:
+    database: postgresql
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    url: jdbc:postgresql://localhost:5432/mydiary
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    properties:
+      {
+        mail.smtp.auth: true,
+        mail.smtp.starttls.enable: true
+      }
+  config:
+    import: optional:secrets.yaml
