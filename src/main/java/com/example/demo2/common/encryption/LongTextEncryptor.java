@@ -4,9 +4,6 @@ package com.example.demo2.common.encryption;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import javax.crypto.Cipher;
-import java.util.Base64;
-
 @Service
 public class LongTextEncryptor {
     private AttributeEncryptor encryptor;

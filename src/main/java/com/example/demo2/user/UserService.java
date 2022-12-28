@@ -77,8 +77,29 @@ public class UserService {
         }
     }
 
-    public void logout(UserRequestDto userRequestDto) {
-        authTokenService.deleteToken(UUID.fromString(userRequestDto.getToken()));
+    public void logout(String authToken) {
+        if (authToken == null) {
+            return;
+        }
+        authTokenService.deleteToken(UUID.fromString(authToken));
+    }
+
+    public String updateUserAvatarFileName(String authToken, String fileName) throws InvalidTokenException, Unauthorized {
+        User user = getUserFromToken(authToken);
+        if (user == null) {
+            throw new Unauthorized();
+        }
+        user.setAvatarFileName(fileName);
+        userRepository.save(user);
+        return "SUCCESS";
+    }
+
+    public String getUserAvatarFileName(String authToken) throws InvalidTokenException, Unauthorized {
+        User user = getUserFromToken(authToken);
+        if (user == null) {
+            throw new Unauthorized();
+        }
+        return user.getAvatarFileName();
     }
 
     public UserPreferencesResponseDto getUserPreferences(String authToken) throws Unauthorized, InvalidTokenException {

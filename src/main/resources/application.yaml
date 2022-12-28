@@ -1,6 +1,8 @@
 
 server:
   port: 8385
+  tomcat:
+    max-swallow-size: 100MB
 spring:
   jpa:
     database: postgresql
@@ -19,4 +21,8 @@ spring:
         mail.smtp.starttls.enable: true
       }
   config:
-    import: optional:secrets.yaml
+    import: optional:secrets/secrets.yaml
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB

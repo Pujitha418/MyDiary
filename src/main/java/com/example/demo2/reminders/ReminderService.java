@@ -12,7 +12,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class ReminderService {
@@ -51,6 +53,12 @@ public class ReminderService {
         //send to kafka and write SMS consumer
     }
 
+    public void updateReminderStatus(Long id, ReminderStatus reminderStatus) {
+        Reminder reminder = reminderRepository.findById(id).orElseThrow(() -> new RuntimeException("Reminder not found"));
+        reminder.setStatus(reminderStatus.toString());
+        reminderRepository.save(reminder);
+    }
+
     private void createSchedulesAndPublishEvent(ReminderMode reminderMode, ReminderStatus reminderStatus) {
         //System.out.println(preferencesRepository.getUsersWithEmailReminderPreferenceUnfulfilled());
         List<User> users = preferencesRepository.getUsersWithEmailReminderPreferenceUnfulfilled();
@@ -58,8 +66,8 @@ public class ReminderService {
         for (User user:
                 users) {
             Reminder reminder = new Reminder(user, ReminderMode.Email.toString(), new Date(), ReminderStatus.SCHEDULED.toString());
-            reminderRepository.save(reminder);
-            emailService.sendEmailEventToKafka(reminderToSendEmailApiParamsConverter(reminder));
+            Reminder savedReminder = reminderRepository.save(reminder);
+            emailService.sendEmailEventToKafka(reminderToSendEmailApiParamsConverter(savedReminder));
         }
     }
 
@@ -68,6 +76,11 @@ public class ReminderService {
         params.setToEmail(reminder.getUser().getEmail());
         params.setSubject("Your Journey Reminder - "+reminder.getReminderTime().toString());
         params.setName(reminder.getUser().getName());
+
+        Map<String, Long> postCallableMethods = new HashMap<>();
+        postCallableMethods.put("updateReminderStatus", reminder.getId());
+        params.setPostCallable(postCallableMethods);
+
         return params;
     }
 }

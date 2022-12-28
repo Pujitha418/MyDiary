@@ -5,6 +5,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.Map;
+
 @Getter
 @Setter
 @AllArgsConstructor
@@ -13,4 +15,5 @@ public class SendEmailApiParams {
     private String name;
     private String toEmail;
     private String subject;
+    private Map<String, Long> postCallable;
 }

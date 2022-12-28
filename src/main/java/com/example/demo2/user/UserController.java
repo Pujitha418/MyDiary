@@ -1,9 +1,12 @@
 package com.example.demo2.user;
 
+import com.example.demo2.gcs.GCSConfigProperties;
+import com.example.demo2.gcs.controllers.GCSFileTransfer;
 import com.example.demo2.user.dtos.*;
 import com.example.demo2.user.exceptions.EmailAlreadyExistsException;
 import com.example.demo2.common.exceptions.Unauthorized;
 import com.example.demo2.user.exceptions.UserNotFoundException;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.Logger;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,27 +15,46 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
+import org.springframework.util.Base64Utils;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 @Controller
 @RestController
 //@RequestMapping("/user")
 public class UserController {
+    private GCSConfigProperties gcsConfigProperties;
     private final UserService userService;
     private final ModelMapper modelMapper;
     private final Logger logger;
     private final HttpHeaders httpHeaders = new HttpHeaders();
     private final List<String> allowedHeaders = new ArrayList<>();
+    private final GCSFileTransfer gcsFileTransfer;
+
+    private final String userProfileImagesBucketName;
 
     @Autowired
-    public UserController(UserService userService, ModelMapper modelMapper, Logger logger) {
+    public UserController(UserService userService, ModelMapper modelMapper, Logger logger, GCSConfigProperties gcsConfigProperties, GCSFileTransfer gcsFileTransfer) {
         this.userService = userService;
         this.modelMapper = modelMapper;
         this.logger = logger;
+        //Read userAvatarImages bucket name from GCSConfigProperties (this is autowired as it is marked as configuration.
+        // Bean will be created automatically.
+        this.gcsConfigProperties = gcsConfigProperties;
+        //since this is mandatory, wrapped with assert.
+        {
+            assert gcsConfigProperties != null;
+            this.userProfileImagesBucketName = gcsConfigProperties.userProfileImagesBucketName();
+        }
+
+        this.gcsFileTransfer = gcsFileTransfer;
+
         this.httpHeaders.add("isAdmin", String.valueOf(false));
         this.allowedHeaders.add("Origin");
         this.allowedHeaders.add("Content-Type");
@@ -41,9 +63,12 @@ public class UserController {
         List<String> exposedHeaders = new ArrayList<>();
         exposedHeaders.add("isAdmin");
         this.httpHeaders.setAccessControlExposeHeaders(exposedHeaders);
-        //httpHeaders.setAccessControlAllowOrigin("http://localhost:3000");
+        //this.httpHeaders.setAccessControlAllowOrigin("http://localhost:3000");
         this.httpHeaders.setAccessControlAllowCredentials(true);
-        this.httpHeaders.setAccessControlAllowMethods(Collections.singletonList(HttpMethod.GET));
+        List<HttpMethod> allowedMethods = new ArrayList<>();
+        allowedMethods.add(HttpMethod.GET);
+        allowedMethods.add(HttpMethod.POST);
+        this.httpHeaders.setAccessControlAllowMethods(allowedMethods);
         this.httpHeaders.setAccessControlAllowHeaders(allowedHeaders);
 
     }
@@ -118,9 +143,13 @@ public class UserController {
     }
 
     @PostMapping(path = "/logout")
-    public ResponseEntity<String> logout(@RequestBody UserRequestDto userRequestDto) {
-        userService.logout(userRequestDto);
-        return ResponseEntity.ok().body("SUCCESS");
+    @CrossOrigin(origins = "http://localhost:3000")
+    public ResponseEntity<String> logout(@RequestHeader(HttpHeaders.AUTHORIZATION) String authToken) {
+        userService.logout(StringUtils.removeStart(authToken, "Bearer").trim());
+        return ResponseEntity
+                .ok()
+                .headers(httpHeaders)
+                .body("SUCCESS");
     }
 
     //@GetMapping(value = "/preferences/{id}")
@@ -164,6 +193,57 @@ public class UserController {
                     .headers(httpHeaders)
                     .body(preferencesResponse);
         }
+    }
+
+    @RequestMapping(path = "/user/profilePicture", method = RequestMethod.GET)
+    @CrossOrigin(origins = "http://localhost:3000")
+    public ResponseEntity<byte[]> getUserDp(@RequestHeader(HttpHeaders.AUTHORIZATION) String authToken) {
+        try {
+            if (authToken==null) {
+                throw new Unauthorized();
+            }
+            String fileName = userService.getUserAvatarFileName(authToken);
+            byte[] imgBytes = fileName!=null?gcsFileTransfer.downloadToMemory("my-diary-user-avatar", fileName):null;
+            BufferedImage img = fileName!=null?ImageIO.read(new ByteArrayInputStream(imgBytes)):null;
+
+            return ResponseEntity
+                    .ok()
+                    .headers(httpHeaders)
+                    .body(Base64Utils.encode(imgBytes));
+        } catch (Exception e) {
+            return ResponseEntity
+                    .badRequest()
+                    .headers(httpHeaders)
+                    .body(null);
+        }
+    }
+
+    @RequestMapping(path = "/user/profilePicture", method = RequestMethod.POST)
+    @CrossOrigin(origins = "http://localhost:3000")
+    public ResponseEntity<String> updateUserDp(@RequestHeader(HttpHeaders.AUTHORIZATION) String authToken,
+                                               @RequestParam("file") MultipartFile image,
+                                               @RequestParam("name") String fileName) {
+        System.out.println("inside updateUserDp = ");
+        System.out.println("image = " + image);
+        String uploadStatus = gcsFileTransfer.upload("my-diary-user-avatar", fileName, image);
+        if (uploadStatus == "SUCCESS") {
+            try {
+                return ResponseEntity
+                        .ok()
+                        .headers(httpHeaders)
+                        .body(userService.updateUserAvatarFileName(authToken, fileName));
+            } catch (Exception e) {
+                return ResponseEntity
+                        .badRequest()
+                        .headers(httpHeaders)
+                        .body("Unable to update. Please try again later!");
+            }
+        }
+        else
+            return ResponseEntity
+                    .badRequest()
+                    .headers(httpHeaders)
+                    .body(uploadStatus);
     }
 
     @ExceptionHandler ({

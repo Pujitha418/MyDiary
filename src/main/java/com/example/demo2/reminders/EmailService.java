@@ -9,8 +9,8 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class EmailService {
-    private JavaMailSender emailSender;
-    private Logger logger;
+    private final JavaMailSender emailSender;
+    private final Logger logger;
 
     @Autowired
     public EmailService(JavaMailSender emailSender, Logger logger) {

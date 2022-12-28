@@ -22,4 +22,5 @@ public class User extends BaseModel {
     @Column(unique = true, updatable = false)
     @NonNull
     private String email;
+    private String avatarFileName;
 }

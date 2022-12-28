@@ -1,5 +1,4 @@
 HELP.md
-secrets.yaml
 README.md
 target/
 !.mvn/wrapper/maven-wrapper.jar
@@ -33,3 +32,5 @@ build/
 
 ### VS Code ###
 .vscode/
+/src/main/resources/secrets/secrets.yaml
+/src/main/resources/secrets/mydiary-372509-373e0b16256e.json
