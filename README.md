@@ -7,6 +7,9 @@ This repository is for backend code.
 
 Java Spring Boot Service. Supports 2 types of users:
 
+FrontEnd:
+Repo [here](https://github.com/Pujitha418/MyDiary-UI)
+
 ##### 1. Registered users:
 
     Users can register and login.
