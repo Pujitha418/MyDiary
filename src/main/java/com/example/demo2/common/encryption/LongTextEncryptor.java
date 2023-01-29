@@ -44,7 +44,7 @@ public class LongTextEncryptor {
                 temp.append(encryptedText.charAt(idx));
                 idx+=1;
             }
-            res.append(new String(encryptor.convertToEntityAttribute(String.valueOf(temp))));
+            res.append(encryptor.convertToEntityAttribute(String.valueOf(temp)));
             idx+=1;
         }
         return String.valueOf(res);

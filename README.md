@@ -10,6 +10,10 @@ Java Spring Boot Service. Supports 2 types of users:
 FrontEnd:
 Repo [here](https://github.com/Pujitha418/MyDiary-UI)
 
+#### Demo:
+
+[https://www.loom.com/share/3feebef1602f4c58b67eb63c0307cc3c](https://www.loom.com/share/3feebef1602f4c58b67eb63c0307cc3c)
+
 ##### 1. Registered users:
 
     Users can register and login.
@@ -29,6 +33,7 @@ Repo [here](https://github.com/Pujitha418/MyDiary-UI)
 Postgresql
 
 ### Other Features:
-- User Memories are encrypted and stored inn database.
+- User Memories are encrypted and stored in database.
+  ![img.png](EncryptedNotes.png)
 - User profile images and Images added to memories are served from Google cloud storage.
 

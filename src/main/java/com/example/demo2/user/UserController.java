@@ -1,5 +1,6 @@
 package com.example.demo2.user;
 
+import com.example.demo2.common.filetransfer.CloudFileTransfer;
 import com.example.demo2.gcs.GCSConfigProperties;
 import com.example.demo2.gcs.controllers.GCSFileTransfer;
 import com.example.demo2.user.dtos.*;
@@ -29,13 +30,13 @@ import java.util.List;
 @RestController
 //@RequestMapping("/user")
 public class UserController {
-    private GCSConfigProperties gcsConfigProperties;
+    private final GCSConfigProperties gcsConfigProperties;
     private final UserService userService;
     private final ModelMapper modelMapper;
     private final Logger logger;
     private final HttpHeaders httpHeaders = new HttpHeaders();
     private final List<String> allowedHeaders = new ArrayList<>();
-    private final GCSFileTransfer gcsFileTransfer;
+    private final CloudFileTransfer cloudFileTransfer;
 
     private final String userProfileImagesBucketName;
 
@@ -44,7 +45,7 @@ public class UserController {
         this.userService = userService;
         this.modelMapper = modelMapper;
         this.logger = logger;
-        //Read userAvatarImages bucket name from GCSConfigProperties (this is autowired as it is marked as configuration.
+        //Read userAvatarImages bucket name from GCSConfigProperties (this is autowired as it is marked as configuration).
         // Bean will be created automatically.
         this.gcsConfigProperties = gcsConfigProperties;
         //since this is mandatory, wrapped with assert.
@@ -53,7 +54,7 @@ public class UserController {
             this.userProfileImagesBucketName = gcsConfigProperties.userProfileImagesBucketName();
         }
 
-        this.gcsFileTransfer = gcsFileTransfer;
+        this.cloudFileTransfer = gcsFileTransfer;
 
         this.httpHeaders.add("isAdmin", String.valueOf(false));
         this.allowedHeaders.add("Origin");
@@ -203,7 +204,7 @@ public class UserController {
                 throw new Unauthorized();
             }
             String fileName = userService.getUserAvatarFileName(authToken);
-            byte[] imgBytes = fileName!=null?gcsFileTransfer.downloadToMemory("my-diary-user-avatar", fileName):null;
+            byte[] imgBytes = fileName!=null?cloudFileTransfer.downloadToMemory("my-diary-user-avatar", fileName):null;
             BufferedImage img = fileName!=null?ImageIO.read(new ByteArrayInputStream(imgBytes)):null;
 
             return ResponseEntity
@@ -225,8 +226,8 @@ public class UserController {
                                                @RequestParam("name") String fileName) {
         System.out.println("inside updateUserDp = ");
         System.out.println("image = " + image);
-        String uploadStatus = gcsFileTransfer.upload("my-diary-user-avatar", fileName, image);
-        if (uploadStatus == "SUCCESS") {
+        String uploadStatus = cloudFileTransfer.upload("my-diary-user-avatar", fileName, image);
+        if (uploadStatus.equals("SUCCESS")) {
             try {
                 return ResponseEntity
                         .ok()

@@ -165,7 +165,7 @@ public class UserService {
     }
 
     public Boolean isAdminUser(String userName) {
-        if (userName.toUpperCase().equals("ADMIN")) {
+        if (userName.equalsIgnoreCase("ADMIN")) {
             return Boolean.TRUE;
         }
         return Boolean.FALSE;
